@@ -1,11 +1,9 @@
 ARG ARCH="amd64"
 ARG OS="linux"
-FROM quay.io/prometheus/busybox-${OS}-${ARCH}:latest
+FROM --platform=$BUILDPLATFORM quay.io/prometheus/busybox:latest 
 LABEL maintainer="Kristof Keppens <kristof.keppens@ugent.be>"
 
-ARG ARCH="amd64"
-ARG OS="linux"
-COPY .build/${OS}-${ARCH}/pearl-exporter  /bin/pearl-exporter
+COPY .build/linux-amd64/pearl-exporter  /bin/pearl-exporter
 
 EXPOSE      9115
 ENTRYPOINT  [ "/bin/pearl-exporter" ]

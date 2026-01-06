@@ -69,7 +69,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request, logger log.Logger) {
 		Namespace: namespace,
 		Name:      "system_info",
 		Help:      "Returns system info for the probed device",
-	}, []string{"firmware_version", "firmware_update_availability", "uptime"})
+	}, []string{"firmware_version", "uptime"})
 	probeStorageGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: namespace,
 		Name:      "storage",
@@ -110,6 +110,11 @@ func probeHandler(w http.ResponseWriter, r *http.Request, logger log.Logger) {
 		Name:      "rca_audio_status",
 		Help:      "Returns the current audio levels for the RCA/line in  audio input",
 	}, []string{"channel", "type"})
+	probeXLRStatusGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Name:      "xlr_audio_status",
+		Help:      "Returns the current audio levels for the XLR audio input",
+	}, []string{"channel", "type"})
 
 	params := r.URL.Query()
 	target := params.Get("target")
@@ -135,17 +140,19 @@ func probeHandler(w http.ResponseWriter, r *http.Request, logger log.Logger) {
 	registry.MustRegister(probeSDIStatusGauge)
 	registry.MustRegister(probeHDMIStatusGauge)
 	registry.MustRegister(probeRCAStatusGauge)
+	registry.MustRegister(probeXLRStatusGauge)
 
 	level.Info(logger).Log("msg", "Probing target : "+target)
 	firmwareVersion, firmwareVersionError := prober.GetFirmwareVersion(target, user, password)
 	systemInfo, systemInfoError := prober.GetSystemInfo(target, user, password)
 	storageInfo, storageInfoError := prober.GetStorageInfo(target, user, password)
 	channelInfo, channelInfoError := prober.GetChannelInfo(target, user, password)
-	updateInfo, updateInfoError := prober.GetFirmwareUpdateAvailability(target, user, password)
+	//updateInfo, updateInfoError := prober.GetFirmwareUpdateAvailability(target, user, password)
 	recorderInfo, recorderInfoError := prober.GetRecorderInfo(target, user, password)
 	sdiInfo, sdiInfoError := prober.GetSDIStatus(target, user, password)
 	hdmiInfo, hdmiInfoError := prober.GetHDMIStatus(target, user, password)
 	rcaInfo, rcaInfoError := prober.GetRCAVolumeStatus(target, user, password)
+	xlrInfo, xlrInfoError := prober.GetXLRVolumeStatus(target, user, password)
 	duration := time.Since(start).Seconds()
 
 	probeDurationGauge.Set(duration)
@@ -154,8 +161,8 @@ func probeHandler(w http.ResponseWriter, r *http.Request, logger log.Logger) {
 		level.Info(logger).Log("msg", "Probe failed", "duration_seconds", duration)
 	} else {
 		probeSuccessGauge.Set(1)
-		if updateInfoError == nil {
-			probeInfoGauge.With(prometheus.Labels{"firmware_version": firmwareVersion.Result, "firmware_update_availability": updateInfo.Result.Status, "uptime": strconv.FormatInt(int64(systemInfo.Result.Uptime), 10)}).Set(1)
+		if firmwareVersionError == nil {
+			probeInfoGauge.With(prometheus.Labels{"firmware_version": firmwareVersion.Result, "uptime": strconv.FormatInt(int64(systemInfo.Result.Uptime), 10)}).Set(1)
 		}
 
 		if systemInfoError == nil {
@@ -203,6 +210,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request, logger log.Logger) {
 		}
 
 		if rcaInfoError == nil {
+			print(rcaInfo)
 			probeRCAStatusGauge.With(prometheus.Labels{"channel": "left", "type": "peak"}).Set(float64(rcaInfo.Result.Peak[0]))
 			probeRCAStatusGauge.With(prometheus.Labels{"channel": "right", "type": "peak"}).Set(float64(rcaInfo.Result.Peak[1]))
 			probeRCAStatusGauge.With(prometheus.Labels{"channel": "left", "type": "rms"}).Set(float64(rcaInfo.Result.Rms[0]))
@@ -210,6 +218,17 @@ func probeHandler(w http.ResponseWriter, r *http.Request, logger log.Logger) {
 		} else {
 			fmt.Println(rcaInfoError)
 		}
+
+		if xlrInfoError == nil {
+			print(xlrInfo)
+			probeXLRStatusGauge.With(prometheus.Labels{"channel": "left", "type": "peak"}).Set(float64(xlrInfo.Result.Peak[0]))
+			probeXLRStatusGauge.With(prometheus.Labels{"channel": "right", "type": "peak"}).Set(float64(xlrInfo.Result.Peak[1]))
+			probeXLRStatusGauge.With(prometheus.Labels{"channel": "left", "type": "rms"}).Set(float64(xlrInfo.Result.Rms[0]))
+			probeXLRStatusGauge.With(prometheus.Labels{"channel": "right", "type": "rms"}).Set(float64(xlrInfo.Result.Rms[1]))
+		} else {
+			fmt.Println(rcaInfoError)
+		}
+
 		level.Info(logger).Log("msg", "Probe succeeded", "duration_seconds", duration)
 	}
 

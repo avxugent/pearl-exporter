@@ -1,7 +1,7 @@
 go:
     # Whenever the Go version is updated here, .travis.yml and
     # .circle/config.yml should also be updated.
-    version: 1.18
+    version: 1.25
 repository:
     path: github.com/mm-dict/pearl-exporter
 build:
@@ -16,3 +16,10 @@ tarball:
     files:
         - LICENSE
         - NOTICE
+
+    
+crossbuild:
+    platforms:
+        - linux/amd64
+        - linux/arm64
+        - linux/arm/v7

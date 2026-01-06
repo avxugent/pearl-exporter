@@ -149,13 +149,33 @@ func GetSDIStatus(target string, user string, password string) (*SDIStatus, erro
 
 func GetRCAVolumeStatus(target string, user string, password string) (*RCAVolumeStatus, error) {
 	s := RCAVolumeStatus{}
-	target = target + "/api/sources/D2P0.analog-b/audiolevels"
+	target = target + "/api/sources/D2P0.analog-a/audiolevels"
 	response, err := doRequest(target, user, password, "GET")
 	if err != nil {
 		return nil, err
 	}
 	err = json.Unmarshal(response, &s)
 	if err != nil {
+		return nil, err
+	}
+	if &s.Result == nil {
+		return nil, err
+	}
+	return &s, nil
+}
+
+func GetXLRVolumeStatus(target string, user string, password string) (*XLRVolumeStatus, error) {
+	s := XLRVolumeStatus{}
+	target = target + "/api/sources/D2P0.analog-a/audiolevels"
+	response, err := doRequest(target, user, password, "GET")
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(response, &s)
+	if err != nil {
+		return nil, err
+	}
+	if &s.Result == nil {
 		return nil, err
 	}
 	return &s, nil

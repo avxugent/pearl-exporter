@@ -127,7 +127,7 @@ type SDIConnectionStatus struct {
 }
 
 type SDIVideoConnectionStatus struct {
-	Actual_fps int
+	Actual_fps float64
 	Interlaced bool
 	Resolution string
 	State      string
@@ -150,7 +150,7 @@ type HDMIConnectionStatus struct {
 }
 
 type HDMIVideoConnectionStatus struct {
-	Actual_fps int
+	Actual_fps float64
 	Interlaced bool
 	Resolution string
 	State      string
@@ -163,6 +163,16 @@ type RCAVolumeStatus struct {
 }
 
 type RCAVolumeDetails struct {
+	Peak []float64
+	Rms  []float64
+}
+
+type XLRVolumeStatus struct {
+	Status string
+	Result XLRVolumeDetails
+}
+
+type XLRVolumeDetails struct {
 	Peak []float64
 	Rms  []float64
 }
