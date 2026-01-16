@@ -1,9 +1,12 @@
-ARG ARCH="amd64"
-ARG OS="linux"
-FROM --platform=$BUILDPLATFORM quay.io/prometheus/busybox:latest 
-LABEL maintainer="Kristof Keppens <kristof.keppens@ugent.be>"
+FROM python:trixie
 
-COPY .build/linux-amd64/pearl-exporter  /bin/pearl-exporter
+WORKDIR /sanic
 
-EXPOSE      9115
-ENTRYPOINT  [ "/bin/pearl-exporter" ]
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY pearl_exporter.py prober.py ./
+
+EXPOSE 8000
+
+ENTRYPOINT ["sanic", "pearl_exporter:app", "--port=8000", "--host=0.0.0.0", "--workers=4"]
