@@ -61,6 +61,9 @@ def run_probe(target, user, password):
     probe_hdmi_status = Gauge('hdmi_status', 'Returns information regarding the HDMI channel, sets the value to the current fps', ['resolution'], namespace=NAMESPACE, registry=registry)
     probe_rca_status = Gauge('rca_audio_status', 'Returns the current audio levels for the RCA/line in audio input', ['channel', 'type'], namespace=NAMESPACE, registry=registry)
     probe_xlr_status = Gauge('xlr_audio_status', 'Returns the current audio levels for the XLR audio input', ['channel', 'type'], namespace=NAMESPACE, registry=registry)
+    probe_scheduled_events = Gauge('scheduled_events', 'Returns the number of scheduled events', namespace=NAMESPACE, registry=registry)
+    probe_last_recording = Gauge('last_recording', 'Returns the time of the last recording', namespace=NAMESPACE, registry=registry)
+    probe_finished_events = Gauge('finished_events', 'Returns the number of finished events', namespace=NAMESPACE, registry=registry)
 
     start_time = time.time()
     success = True
@@ -149,6 +152,22 @@ def run_probe(target, user, password):
         except Exception as e:
             logger.error(f"Error fetching XLR info: {e}")
 
+        # Finished Events
+        finished_events = None
+        try:
+            if success:
+                finished_events = prober.get_finished_events(target, user, password)
+        except Exception as e:
+            logger.error(f"Error fetching finished events: {e}")
+
+        # Scheduled Events
+        scheduled_events = None
+        try:
+            if success:
+                scheduled_events = prober.get_scheduled_events(target, user, password)
+        except Exception as e:
+            logger.error(f"Error fetching scheduled events: {e}")
+
 
         # Update Metrics
         
@@ -214,6 +233,13 @@ def run_probe(target, user, password):
             if rms and len(rms) >= 2:
                 probe_xlr_status.labels(channel="left", type="rms").set(float(rms[0]))
                 probe_xlr_status.labels(channel="right", type="rms").set(float(rms[1]))
+
+        if scheduled_events:
+            probe_scheduled_events.set(scheduled_events)
+
+        if finished_events:
+            probe_finished_events.set(finished_events.get("number"))
+            probe_last_recording.set(finished_events.get("last_recording"))
 
         probe_success.set(1 if success else 0)
 

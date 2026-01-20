@@ -67,3 +67,23 @@ def get_rca_volume_status(target, user, password):
 def get_xlr_volume_status(target, user, password):
     url = f"{target}/api/sources/D2P0.analog-b/audiolevels"
     return do_request(url, user, password)
+
+def get_finished_events(target, user, password):
+    url = f"{target}/api/schedule/events?status=finished"
+    result = do_request(url, user, password)
+    finished_recordings = len(result.get("result"))
+    logger.info(result.get("result")[-1])
+    last_recording = result.get("result")[-1].get("start")
+
+    return {
+            "number": finished_recordings,
+            "last_recording": last_recording
+    }
+    
+
+def get_scheduled_events(target, user, password):
+    url = f"{target}/api/schedule/events?status=scheduled"
+    result = do_request(url, user, password)
+    scheduled_recordings = len(result.get("result"))
+
+    return scheduled_recordings;
