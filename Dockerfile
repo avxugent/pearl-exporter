@@ -5,7 +5,7 @@ WORKDIR /sanic
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY pearl_exporter.py prober.py ./
+COPY pearl_exporter.py prober.py bao.py ./
 
 EXPOSE 8000
 

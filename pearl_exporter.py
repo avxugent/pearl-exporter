@@ -1,10 +1,12 @@
 import time
 import logging
 import asyncio
+from urllib.parse import urlparse
 from sanic import Sanic, response
 from prometheus_client import CollectorRegistry, Gauge, generate_latest, CONTENT_TYPE_LATEST
 
 import prober
+import bao
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -31,13 +33,25 @@ async def metrics(request):
 @app.route("/probe")
 async def probe(request):
     target = request.args.get("target")
-    user = request.args.get("user")
-    password = request.args.get("password")
 
     if not target:
         return response.text("Target parameter is missing", status=400)
 
-    logger.info(f"Beginning epiphan pearl probe with username {user} and password {password}")
+    # Resolve the device hostname from the target URL (handles scheme, port).
+    parsed = urlparse(target if "://" in target else f"//{target}")
+    hostname = parsed.hostname or target
+
+    # OpenBao first, fall back to URL query params for backwards compatibility.
+    creds = bao.get_credentials(hostname)
+    if creds:
+        user, password = creds
+        source = "openbao"
+    else:
+        user = request.args.get("user")
+        password = request.args.get("password")
+        source = "url-param"
+
+    logger.info(f"Beginning epiphan pearl probe for {hostname} (credential source: {source})")
 
     # Run the blocking probe logic in a separate thread
     registry = await asyncio.to_thread(run_probe, target, user, password)
